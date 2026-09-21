@@ -72,6 +72,26 @@ describe("normalizeOpenAiToolParameters", () => {
     expect(normalized.allOf).toBeUndefined();
   });
 
+  it("intersects differing specs for the same field under a root allOf", () => {
+    const normalized = normalizeOpenAiToolParameters({
+      allOf: [
+        { type: "object", properties: { n: { type: "integer", minimum: 0 } } },
+        { type: "object", properties: { n: { type: "integer", maximum: 10 } } },
+      ],
+    });
+    expect(normalized).toEqual({
+      type: "object",
+      properties: {
+        n: {
+          allOf: [
+            { type: "integer", minimum: 0 },
+            { type: "integer", maximum: 10 },
+          ],
+        },
+      },
+    });
+  });
+
   it("preserves required, additionalProperties, and existing properties", () => {
     expect(
       normalizeOpenAiToolParameters({

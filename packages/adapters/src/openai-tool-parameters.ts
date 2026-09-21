@@ -35,8 +35,10 @@ function rootUnionKey(schema: Record<string, unknown>) {
 /**
  * Merge root-level variants into one object schema: every variant's fields stay
  * visible, and only fields required by all oneOf/anyOf variants (any allOf
- * variant) stay required. Exclusivity between variants is lost on the wire, so
- * the executor must keep validating arguments against the original schema.
+ * variant) stay required. Differing specs for the same field become a nested
+ * anyOf, or a nested allOf when the root combinator is allOf. Exclusivity
+ * between variants is lost on the wire, so the executor must keep validating
+ * arguments against the original schema.
  */
 function flattenRootUnion(schema: Record<string, unknown>): Record<string, unknown> {
   const key = rootUnionKey(schema);
@@ -53,8 +55,9 @@ function flattenRootUnion(schema: Record<string, unknown>): Record<string, unkno
       specs.set(name, seen);
     }
   }
+  const combinator = key === "allOf" ? "allOf" : "anyOf";
   const properties = Object.fromEntries(
-    [...specs].map(([name, seen]) => [name, seen.length === 1 ? seen[0] : { anyOf: seen }]),
+    [...specs].map(([name, seen]) => [name, seen.length === 1 ? seen[0] : { [combinator]: seen }]),
   );
 
   const requiredOf = (source: Record<string, unknown>) =>
